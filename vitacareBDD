@@ -1,0 +1,149 @@
+
+
+CREATE DATABASE IF NOT EXISTS vitacare CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE vitacare;
+
+-- USERS
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    prenom VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    mot_de_passe VARCHAR(255) NOT NULL,          -- bcrypt hash
+    role ENUM('client', 'intervenant', 'admin') NOT NULL DEFAULT 'client',
+    telephone VARCHAR(20),
+    photo VARCHAR(255),
+    date_naissance DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- SERVICES
+
+CREATE TABLE services (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titre VARCHAR(150) NOT NULL,
+    description TEXT,
+    categorie ENUM('consultation', 'therapie', 'bien_etre', 'nutrition', 'sport', 'meditation', 'autre') NOT NULL DEFAULT 'autre',
+    duree_minutes INT NOT NULL DEFAULT 60,
+    prix DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+    intervenant_id INT,                          -- FK vers users (role intervenant)
+    image VARCHAR(255),
+    actif TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (intervenant_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+
+-- DISPONIBILITÉS des intervenants
+
+CREATE TABLE disponibilites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    intervenant_id INT NOT NULL,
+    service_id INT NOT NULL,
+    date_heure_debut DATETIME NOT NULL,
+    date_heure_fin DATETIME NOT NULL,
+    places_max INT NOT NULL DEFAULT 1,
+    statut ENUM('disponible', 'complet', 'annule') NOT NULL DEFAULT 'disponible',
+    FOREIGN KEY (intervenant_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+
+-- RESERVATIONS (rendez-vous individuels)
+
+CREATE TABLE reservations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
+    disponibilite_id INT NOT NULL,
+    statut ENUM('en_attente', 'confirmee', 'annulee', 'refusee') NOT NULL DEFAULT 'en_attente',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (disponibilite_id) REFERENCES disponibilites(id) ON DELETE CASCADE,
+    UNIQUE KEY no_double_reservation (client_id, disponibilite_id)   -- pas de double réservation
+);
+
+
+-- ACTIVITÉS (ateliers collectifs)
+
+CREATE TABLE activites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titre VARCHAR(150) NOT NULL,
+    description TEXT,
+    categorie ENUM('nutrition', 'relaxation', 'sport', 'prevention', 'meditation', 'atelier', 'autre') NOT NULL DEFAULT 'autre',
+    intervenant_id INT,
+    date_heure_debut DATETIME NOT NULL,
+    date_heure_fin DATETIME NOT NULL,
+    lieu VARCHAR(200),
+    places_max INT NOT NULL DEFAULT 10,
+    prix DECIMAL(8,2) NOT NULL DEFAULT 0.00,
+    image VARCHAR(255),
+    statut ENUM('ouverte', 'complete', 'annulee', 'terminee') NOT NULL DEFAULT 'ouverte',
+    date_limite_inscription DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (intervenant_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+
+-- INSCRIPTIONS aux activités
+
+CREATE TABLE inscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
+    activite_id INT NOT NULL,
+    statut ENUM('en_attente', 'confirmee', 'annulee', 'refusee') NOT NULL DEFAULT 'en_attente',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (activite_id) REFERENCES activites(id) ON DELETE CASCADE,
+    UNIQUE KEY no_double_inscription (client_id, activite_id)
+);
+
+
+-- NOTIFICATIONS
+
+CREATE TABLE notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    titre VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    type ENUM('reservation', 'annulation', 'modification', 'inscription', 'systeme') NOT NULL DEFAULT 'systeme',
+    lu TINYINT(1) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
+INSERT INTO users (nom, prenom, email, mot_de_passe, role, telephone) VALUES
+('Admin', 'VitaCare', 'admin@vitacare.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', '0600000001'),
+('Martin', 'Sophie', 'sophie@vitacare.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'intervenant', '0600000002'),
+('Garnier', 'Elise', 'elise@vitacare.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'intervenant', '0600000003'),
+('Dupont', 'Julie', 'julie@test.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'client', '0600000004'),
+('Leroy', 'Thomas', 'thomas@test.fr', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'client', '0600000005');
+-- mot de passe pour tous : "password"
+
+-- Services
+INSERT INTO services (titre, description, categorie, duree_minutes, prix, intervenant_id) VALUES
+('Massage thérapeutique', 'Massage adapté pour soulager les tensions et favoriser la relaxation.', 'therapie', 60, 75.00, 2),
+('Consultation nutrition', 'Bilan nutritionnel personnalisé avec conseils alimentaires.', 'nutrition', 45, 60.00, 3),
+('Séance de yoga', 'Séance individuelle de yoga adapté à votre niveau.', 'sport', 60, 50.00, 2),
+('Sophrologie', 'Technique de relaxation et gestion du stress.', 'bien_etre', 50, 55.00, 3),
+('Coaching bien-être', 'Accompagnement personnalisé pour votre équilibre de vie.', 'bien_etre', 60, 65.00, 2);
+
+-- Disponibilités (créneaux dans les prochains jours)
+INSERT INTO disponibilites (intervenant_id, service_id, date_heure_debut, date_heure_fin, places_max) VALUES
+(2, 1, '2026-05-27 09:00:00', '2026-05-27 10:00:00', 1),
+(2, 1, '2026-05-27 10:00:00', '2026-05-27 11:00:00', 1),
+(2, 1, '2026-05-28 14:00:00', '2026-05-28 15:00:00', 1),
+(3, 2, '2026-05-27 11:00:00', '2026-05-27 11:45:00', 1),
+(3, 2, '2026-05-29 09:00:00', '2026-05-29 09:45:00', 1),
+(2, 3, '2026-05-30 10:00:00', '2026-05-30 11:00:00', 1);
+
+-- Activités de groupe
+INSERT INTO activites (titre, description, categorie, intervenant_id, date_heure_debut, date_heure_fin, lieu, places_max, prix, date_limite_inscription) VALUES
+('Atelier nutrition équilibrée', 'Apprenez les bases d une alimentation saine et équilibrée.', 'nutrition', 3, '2026-05-28 10:00:00', '2026-05-28 11:30:00', 'Salle Nutrition', 15, 20.00, '2026-05-27 23:59:59'),
+('Séance de relaxation', 'Relâchez le stress avec des techniques de respiration et relaxation guidée.', 'relaxation', 2, '2026-05-29 14:00:00', '2026-05-29 15:00:00', 'Salle Bien-être', 10, 15.00, '2026-05-28 23:59:59'),
+('Yoga doux', 'Séance de yoga accessible à tous les niveaux.', 'sport', 2, '2026-05-30 18:00:00', '2026-05-30 19:30:00', 'Studio Yoga', 12, 18.00, '2026-05-29 23:59:59'),
+('Méditation guidée', 'Initiation à la méditation de pleine conscience.', 'meditation', 3, '2026-05-31 09:00:00', '2026-05-31 10:00:00', 'Salle Calme', 8, 12.00, '2026-05-30 23:59:59');
