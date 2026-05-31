@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Europa Cigar Shop</title>
+
+<style>
+body { font-family: Arial; }
+
+header {
+    color: white;
+    background: black;
+    text-align: center;
+    padding: 20px;
+}
+
+.layout {
+    display: flex;
+    gap: 20px;
+}
+
+nav {
+    width: 150px;
+    padding: 20px;
+    background: #eeddbb;
+}
+
+nav ul { list-style: none; padding: 0; }
+
+nav a { text-decoration: none; color: black; }
+
+section { flex: 1; padding: 20px; }
+
+.product {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #fdf4e3;
+    border: 1px solid #ccc;
+}
+
+.product img { width: 120px; }
+
+.bottom-layout {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.form-container, .cart-container {
+    flex: 1;
+    padding: 20px;
+    border: 1px solid #ccc;
+}
+
+button {
+    margin-top: 10px;
+    padding: 8px;
+    cursor: pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>Europa Cigar Shop – Galerie de produits</h1>
+</header>
+
+<div class="layout">
+
+<nav>
+<ul>
+<li><a href="#">Home</a></li>
+<li><a href="#">Promotions</a></li>
+<li><a href="#">Shipping</a></li>
+<li><a href="#">About</a></li>
+<li><a href="#">FAQ</a></li>
+<li><a href="#">Contact</a></li>
+</ul>
+</nav>
+
+<section>
+
+<div class="product">
+<img src="bolivar.jpg">
+<div>
+<h2>Bolivar Edicion Simones</h2>
+</div>
+</div>
+
+<div class="product">
+<img src="partagas.jpg">
+<div>
+<h2>Partagas Serie D No 5 2008 LE</h2>
+</div>
+</div>
+
+<div class="product">
+<img src="porlarranaga.jpg">
+<div>
+<h2>POR LARRANAGA Petit Coronas</h2>
+</div>
+</div>
+
+<div class="bottom-layout">
+
+<div class="form-container">
+<form>
+<input type="text" id="name" placeholder="Name">
+<input type="email" id="email" placeholder="Email">
+<textarea id="message" placeholder="Message"></textarea>
+<button type="submit">Send</button>
+</form>
+</div>
+
+<div class="cart-container">
+<h2>Votre panier</h2>
+<p>Articles: <span id="cartCount">0</span></p>
+<p>Total: €<span id="cartTotal">0</span></p>
+<button id="sortBtn">Trier A-Z</button>
+<div id="cartItemsList"></div>
+<p id="emptyCartMessage">Panier vide</p>
+</div>
+
+</div>
+
+</section>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function() {
+
+const productPrices = {
+"Bolivar Edicion Simones": 25,
+"Partagas Serie D No 5 2008 LE": 32,
+"POR LARRANAGA Petit Coronas": 18
+};
+
+let cart = [];
+
+const products = document.querySelectorAll(".product");
+const cartList = document.getElementById("cartItemsList");
+const cartCount = document.getElementById("cartCount");
+const cartTotal = document.getElementById("cartTotal");
+const emptyMessage = document.getElementById("emptyCartMessage");
+
+products.forEach(function(product) {
+
+const name = product.querySelector("h2").textContent;
+const price = productPrices[name];
+
+const priceTag = document.createElement("p");
+priceTag.textContent = "Prix : €" + price;
+product.querySelector("div").appendChild(priceTag);
+
+const btn = document.createElement("button");
+btn.textContent = "Ajouter au panier";
+product.querySelector("div").appendChild(btn);
+
+btn.addEventListener("click", function() {
+
+let existing = cart.find(item => item.name === name);
+
+if (existing) {
+existing.quantity++;
+} else {
+cart.push({ name: name, price: price, quantity: 1 });
+}
+
+updateCartUI();
+
+});
+
+});
+
+function updateCartUI() {
+
+cartList.innerHTML = "";
+
+let total = 0;
+let count = 0;
+
+cart.forEach(function(item, index) {
+
+const div = document.createElement("div");
+div.textContent = item.name + " x" + item.quantity;
+
+const removeBtn = document.createElement("button");
+removeBtn.textContent = "Supprimer";
+
+removeBtn.addEventListener("click", function() {
+cart.splice(index, 1);
+updateCartUI();
+});
+
+div.appendChild(removeBtn);
+cartList.appendChild(div);
+
+total += item.price * item.quantity;
+count += item.quantity;
+
+});
+
+cartCount.textContent = count;
+cartTotal.textContent = total;
+
+emptyMessage.style.display = cart.length === 0 ? "block" : "none";
+
+}
+
+document.getElementById("sortBtn").addEventListener("click", function() {
+
+const section = document.querySelector("section");
+const productsArray = Array.from(products);
+
+productsArray.sort((a, b) => {
+return a.querySelector("h2").textContent.localeCompare(
+b.querySelector("h2").textContent
+);
+});
+
+productsArray.forEach(p => section.insertBefore(p, document.querySelector(".bottom-layout")));
+
+});
+
+});
+
+</script>
+
+</body>
+</html>
