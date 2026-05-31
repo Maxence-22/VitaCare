@@ -11,6 +11,7 @@ export default function Dashboard({ user }) {
   const [stats, setStats] = useState(null);
   const [reservations, setReservations] = useState([]);
   const [loadingRes, setLoadingRes] = useState(false);
+  const [searchRes, setSearchRes] = useState(""); // recherche réservations
   const [activites, setActivites] = useState([]);
   const [loadingAct, setLoadingAct] = useState(false);
   const [services, setServices] = useState([]);
@@ -18,22 +19,24 @@ export default function Dashboard({ user }) {
   const [utilisateurs, setUtilisateurs] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
+  // formulaires
   const [newService, setNewService] = useState({ titre: "", description: "", categorie: "bien_etre", duree_minutes: 60, prix: 0 });
   const [serviceMsg, setServiceMsg] = useState("");
-
   const [newActivite, setNewActivite] = useState({
     titre: "", description: "", categorie: "atelier",
     date_heure_debut: "", date_heure_fin: "",
     lieu: "", places_max: 10, prix: 0, date_limite_inscription: ""
   });
   const [activiteMsg, setActiviteMsg] = useState("");
-
   const [newDispo, setNewDispo] = useState({ service_id: "", date_heure_debut: "", date_heure_fin: "", places_max: 1 });
   const [dispoMsg, setDispoMsg] = useState("");
 
+  // modale participants
   const [activiteParticipants, setActiviteParticipants] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [loadingPart, setLoadingPart] = useState(false);
+  const [partMsg, setPartMsg] = useState("");
+  const [searchClient, setSearchClient] = useState(""); // recherche client pour ajout
 
   useEffect(() => {
     if (onglet === "stats") fetchStats();
@@ -94,6 +97,8 @@ export default function Dashboard({ user }) {
   async function handleVoirParticipants(activite) {
     setActiviteParticipants(activite);
     setParticipants([]);
+    setPartMsg("");
+    setSearchClient("");
     setLoadingPart(true);
     try {
       const res = await fetch(`${API_URL}/activites/participants.php?activite_id=${activite.id}`, { credentials: "include" });
@@ -101,6 +106,54 @@ export default function Dashboard({ user }) {
       if (data.success) setParticipants(data.participants);
     } catch (err) { console.error(err); }
     finally { setLoadingPart(false); }
+  }
+
+  async function handleRetirerParticipant(clientId, activiteId) {
+    if (!confirm("Retirer ce participant de l'activité ?")) return;
+    try {
+      const res = await fetch(`${API_URL}/activites/retirer_participant.php`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activite_id: activiteId, client_id: clientId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPartMsg("✅ Participant retiré.");
+        setParticipants(prev => prev.filter(p => p.id !== clientId));
+        // mettre à jour le nb_inscrits dans la liste
+        setActivites(prev => prev.map(a =>
+          a.id === activiteId ? { ...a, nb_inscrits: parseInt(a.nb_inscrits) - 1 } : a
+        ));
+        setActiviteParticipants(prev => ({ ...prev, nb_inscrits: parseInt(prev.nb_inscrits) - 1 }));
+      } else {
+        setPartMsg("❌ " + (data.message || "Erreur."));
+      }
+    } catch (err) { setPartMsg("❌ Erreur serveur."); }
+  }
+
+  async function handleAjouterParticipant(clientId) {
+    setPartMsg("");
+    try {
+      const res = await fetch(`${API_URL}/activites/ajouter_participant.php`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activite_id: activiteParticipants.id, client_id: clientId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPartMsg("✅ Participant ajouté.");
+        setSearchClient("");
+        // recharger les participants
+        const res2 = await fetch(`${API_URL}/activites/participants.php?activite_id=${activiteParticipants.id}`, { credentials: "include" });
+        const data2 = await res2.json();
+        if (data2.success) {
+          setParticipants(data2.participants);
+          setActiviteParticipants(prev => ({ ...prev, nb_inscrits: data2.participants.length }));
+        }
+      } else {
+        setPartMsg("❌ " + (data.message || "Erreur."));
+      }
+    } catch (err) { setPartMsg("❌ Erreur serveur."); }
   }
 
   async function handleStatutReservation(reservationId, statut) {
@@ -155,7 +208,7 @@ export default function Dashboard({ user }) {
       });
       const data = await res.json();
       if (data.success) {
-        setActiviteMsg("✅ Activité créée avec succès.");
+        setActiviteMsg("✅ Activité créée.");
         setNewActivite({ titre: "", description: "", categorie: "atelier", date_heure_debut: "", date_heure_fin: "", lieu: "", places_max: 10, prix: 0, date_limite_inscription: "" });
         fetchActivites();
       } else { setActiviteMsg("❌ " + (data.message || "Erreur.")); }
@@ -172,7 +225,7 @@ export default function Dashboard({ user }) {
       });
       const data = await res.json();
       if (data.success) {
-        setDispoMsg("✅ Créneau ajouté avec succès.");
+        setDispoMsg("✅ Créneau ajouté.");
         setNewDispo({ service_id: "", date_heure_debut: "", date_heure_fin: "", places_max: 1 });
       } else { setDispoMsg("❌ " + (data.message || "Erreur.")); }
     } catch (err) { setDispoMsg("❌ Erreur serveur."); }
@@ -189,6 +242,23 @@ export default function Dashboard({ user }) {
       if (data.success) fetchUtilisateurs();
     } catch (err) { console.error(err); }
   }
+
+  // filtrage réservations par nom client
+  const reservationsFiltrees = reservations.filter(r => {
+    if (!searchRes) return true;
+    const q = searchRes.toLowerCase();
+    return (r.client_prenom + " " + r.client_nom).toLowerCase().includes(q)
+      || r.service_titre.toLowerCase().includes(q);
+  });
+
+  // clients disponibles pour ajout (non encore inscrits)
+  const clientsDisponibles = utilisateurs.filter(u => {
+    if (u.role !== "client") return false;
+    if (!searchClient) return false;
+    const q = searchClient.toLowerCase();
+    const dejainscrit = participants.some(p => p.id === u.id);
+    return !dejainscrit && (u.prenom + " " + u.nom + " " + u.email).toLowerCase().includes(q);
+  });
 
   function BarreProgression({ inscrits, max }) {
     const pct = Math.min(100, Math.round((inscrits / max) * 100));
@@ -210,6 +280,7 @@ export default function Dashboard({ user }) {
     <div className="page-container">
       <h1>Dashboard — {user.role === "admin" ? "Administration" : "Intervenant"}</h1>
 
+      {/* modale participants */}
       {activiteParticipants && (
         <div className="modal-overlay" onClick={() => setActiviteParticipants(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
@@ -218,10 +289,45 @@ export default function Dashboard({ user }) {
               <button className="modal-close" onClick={() => setActiviteParticipants(null)}>✕</button>
             </div>
             <p style={{ marginBottom: "1rem", color: "#666" }}>
-              📅 {new Date(activiteParticipants.date_heure_debut).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+              📅 {new Date(activiteParticipants.date_heure_debut).toLocaleDateString("fr-FR", {
+                weekday: "long", day: "numeric", month: "long"
+              })}
             </p>
             <BarreProgression inscrits={parseInt(activiteParticipants.nb_inscrits)} max={activiteParticipants.places_max} />
-            <div className="participants-list" style={{ marginTop: "1.5rem" }}>
+
+            {partMsg && <p className="info-msg" style={{ margin: "1rem 0" }}>{partMsg}</p>}
+
+            {/* ajout d'un participant */}
+            <div style={{ margin: "1.5rem 0 1rem" }}>
+              <h4 style={{ marginBottom: "0.5rem" }}>Ajouter un participant</h4>
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Rechercher un client par nom ou email..."
+                value={searchClient}
+                onChange={e => setSearchClient(e.target.value)}
+              />
+              {clientsDisponibles.length > 0 && (
+                <div className="participants-list" style={{ marginTop: "0.5rem" }}>
+                  {clientsDisponibles.map(c => (
+                    <div key={c.id} className="participant-card">
+                      <div className="participant-info">
+                        <strong>{c.prenom} {c.nom}</strong>
+                        <p>{c.email}</p>
+                      </div>
+                      <button className="btn-primary" style={{ fontSize: "0.85rem", padding: "0.3rem 0.7rem" }}
+                        onClick={() => handleAjouterParticipant(c.id)}>
+                        + Ajouter
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* liste participants inscrits */}
+            <h4 style={{ marginBottom: "0.5rem" }}>Participants inscrits ({participants.length})</h4>
+            <div className="participants-list">
               {loadingPart ? <p>Chargement...</p> :
                 participants.length === 0 ? <p>Aucun participant inscrit.</p> :
                 participants.map(p => (
@@ -231,7 +337,13 @@ export default function Dashboard({ user }) {
                       <p>{p.email}</p>
                       {p.telephone && <p>📞 {p.telephone}</p>}
                     </div>
-                    <span className={`statut-badge ${p.statut}`}>{p.statut}</span>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.4rem" }}>
+                      <span className={`statut-badge ${p.statut}`}>{p.statut}</span>
+                      <button className="btn-danger" style={{ fontSize: "0.8rem", padding: "0.2rem 0.6rem" }}
+                        onClick={() => handleRetirerParticipant(p.id, activiteParticipants.id)}>
+                        Retirer
+                      </button>
+                    </div>
                   </div>
                 ))
               }
@@ -240,6 +352,7 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
+      {/* onglets */}
       <div className="profile-tabs">
         {ongletsDispo.map(o => (
           <button key={o} className={`profile-tab ${onglet === o ? "active" : ""}`} onClick={() => setOnglet(o)}>
@@ -253,6 +366,7 @@ export default function Dashboard({ user }) {
         ))}
       </div>
 
+      {/* stats */}
       {onglet === "stats" && (
         <div className="profile-section">
           <h2>Vue d'ensemble</h2>
@@ -276,18 +390,31 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
+      {/* réservations avec recherche */}
       {onglet === "reservations" && (
         <div className="profile-section">
-          <h2>Gestion des réservations</h2>
+          <div className="section-header">
+            <h2>Gestion des réservations</h2>
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Rechercher par client ou service..."
+              value={searchRes}
+              onChange={e => setSearchRes(e.target.value)}
+              style={{ maxWidth: "300px" }}
+            />
+          </div>
           {loadingRes ? <p>Chargement...</p> :
-            reservations.length === 0 ? <p>Aucune réservation.</p> : (
+            reservationsFiltrees.length === 0 ? <p>Aucune réservation trouvée.</p> : (
               <div className="reservations-list">
-                {reservations.map(r => (
+                {reservationsFiltrees.map(r => (
                   <div key={r.id} className={`reservation-card ${r.statut}`}>
                     <div className="reservation-info">
                       <h4>{r.service_titre}</h4>
                       <p>👤 {r.client_prenom} {r.client_nom}</p>
-                      <p>📅 {new Date(r.date_heure_debut).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+                      <p>📅 {new Date(r.date_heure_debut).toLocaleDateString("fr-FR", {
+                        weekday: "long", day: "numeric", month: "long", year: "numeric"
+                      })}</p>
                       <p>🕐 {new Date(r.date_heure_debut).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</p>
                       <span className={`statut-badge ${r.statut}`}>{r.statut}</span>
                     </div>
@@ -305,6 +432,7 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
+      {/* activités */}
       {onglet === "activites" && (
         <div className="profile-section">
           {activiteMsg && <p className="info-msg" style={{ marginBottom: "1rem" }}>{activiteMsg}</p>}
@@ -396,6 +524,7 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
+      {/* services */}
       {onglet === "services" && (
         <div className="profile-section">
           {serviceMsg && <p className="info-msg" style={{ marginBottom: "1rem" }}>{serviceMsg}</p>}
@@ -456,6 +585,7 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
+      {/* disponibilités */}
       {onglet === "disponibilites" && (
         <div className="profile-section">
           {dispoMsg && <p className="info-msg" style={{ marginBottom: "1rem" }}>{dispoMsg}</p>}
@@ -496,6 +626,7 @@ export default function Dashboard({ user }) {
         </div>
       )}
 
+      {/* utilisateurs */}
       {onglet === "utilisateurs" && (
         <div className="profile-section">
           <h2>Gestion des utilisateurs</h2>

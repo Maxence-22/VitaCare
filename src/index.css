@@ -795,3 +795,264 @@ body {
   flex-direction: column;
   min-height: 100vh;
 }
+
+/* ============================================================
+   MODE SOMBRE
+   À AJOUTER À LA FIN DE index.css
+   ============================================================ */
+
+.btn-darkmode {
+  background: none;
+  border: 1px solid var(--gris-moyen);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.btn-darkmode:hover { background: var(--gris); }
+
+/* variables mode sombre */
+body.dark {
+  --vert: #27ae60;
+  --vert-fonce: #2ecc71;
+  --vert-clair: #1a2e22;
+  --gris: #1e1e1e;
+  --gris-moyen: #444;
+  --texte: #e0e0e0;
+  --blanc: #121212;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+}
+
+body.dark .navbar {
+  background: #1a1a1a;
+  border-bottom-color: var(--vert);
+}
+
+body.dark .card {
+  background: #1e1e1e;
+  border-color: #333;
+}
+
+body.dark .auth-container,
+body.dark .auth-form {
+  background: transparent;
+}
+
+body.dark .form-group input,
+body.dark .form-group select,
+body.dark .form-group textarea {
+  background: #2a2a2a;
+  color: var(--texte);
+  border-color: #444;
+}
+
+body.dark .reservation-card {
+  background: #1e1e1e;
+}
+
+body.dark .dispo-card {
+  background: #1e1e1e;
+}
+
+body.dark .notif-card.non-lue {
+  background: #1a2530;
+}
+
+body.dark .notif-card.lue {
+  background: #1e1e1e;
+}
+
+body.dark .stat-card {
+  background: #1a2e22;
+}
+
+body.dark .hero {
+  background: linear-gradient(135deg, #1a5e35, #27ae60);
+}
+
+body.dark .category-card {
+  background: #1a2e22;
+  color: var(--texte);
+}
+
+body.dark .cta-section {
+  background: #1e1e1e;
+}
+
+body.dark .users-table th {
+  background: #1e1e1e;
+}
+
+body.dark .users-table td,
+body.dark .users-table th {
+  border-color: #333;
+}
+
+body.dark .participant-card {
+  background: #2a2a2a;
+}
+
+body.dark .modal {
+  background: #1e1e1e;
+}
+
+body.dark .profile-info {
+  background: #1a2e22;
+}
+
+body.dark .detail-header {
+  background: #1a2e22;
+}
+
+body.dark select {
+  background: #2a2a2a;
+  color: var(--texte);
+  border-color: #444;
+}
+
+body.dark select option {
+  background: #2a2a2a;
+  color: var(--texte);
+}
+
+body.dark .filters-bar select {
+  background: #2a2a2a;
+  color: var(--texte);
+}
+
+body.dark .users-table select {
+  background: #2a2a2a;
+  color: var(--texte);
+  border-color: #444;
+}
+
+/* ============================================================
+   CARTES VISUELLES AVEC IMAGES
+   À AJOUTER À LA FIN DE index.css
+   ============================================================ */
+
+.card-visuelle {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* wrapper image en haut de la carte */
+.card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: var(--vert-clair);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.card-visuelle:hover .card-image {
+  transform: scale(1.05);
+}
+
+/* badge catégorie positionné sur l'image en haut à gauche */
+.card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(46, 204, 113, 0.92);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  border: none;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.7rem;
+  text-transform: capitalize;
+  z-index: 1;
+}
+
+/* badge "Complet" en haut à droite */
+.card-badge-complet {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(231, 76, 60, 0.92);
+  color: #fff;
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  z-index: 1;
+}
+
+/* contenu sous l'image */
+.card-content {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.card-content h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.card-btn {
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+}
+
+/* detail image */
+.detail-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  background: var(--vert-clair);
+}
+
+.detail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(46, 204, 113, 0.92);
+  color: #fff;
+  font-size: 0.85rem;
+  backdrop-filter: blur(4px);
+}
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+/* mode sombre pour les cartes images */
+body.dark .card-image-wrapper {
+  background: #1a2e22;
+}
+
+body.dark .detail-image-wrapper {
+  background: #1a2e22;
+}

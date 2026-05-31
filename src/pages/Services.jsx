@@ -12,6 +12,11 @@ const CATEGORIES = [
   { value: "meditation", label: "Méditation" },
 ];
 
+// image par défaut selon la catégorie
+function getImageCategorie(categorie) {
+  return `/images/categorie-${categorie || "autre"}.jpg`;
+}
+
 export default function Services({ user }) {
   const [searchParams] = useSearchParams();
 
@@ -21,12 +26,9 @@ export default function Services({ user }) {
   const [categorie, setCategorie] = useState(searchParams.get("categorie") || "toutes");
   const [tri, setTri] = useState("titre");
 
-  // détail d'un service sélectionné
   const [serviceSelectionne, setServiceSelectionne] = useState(null);
   const [disponibilites, setDisponibilites] = useState([]);
   const [loadingDispo, setLoadingDispo] = useState(false);
-
-  // message après réservation
   const [msgReservation, setMsgReservation] = useState("");
 
   useEffect(() => {
@@ -38,11 +40,8 @@ export default function Services({ user }) {
       const res = await fetch(`${API_URL}/services/list.php`, { credentials: "include" });
       const data = await res.json();
       if (data.success) setServices(data.services);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   }
 
   async function fetchDisponibilites(serviceId) {
@@ -55,11 +54,8 @@ export default function Services({ user }) {
       });
       const data = await res.json();
       if (data.success) setDisponibilites(data.disponibilites);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingDispo(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoadingDispo(false); }
   }
 
   function handleVoirDetail(service) {
@@ -89,7 +85,7 @@ export default function Services({ user }) {
       const data = await res.json();
       if (data.success) {
         setMsgReservation("✅ Réservation effectuée avec succès !");
-        fetchDisponibilites(serviceSelectionne.id); // on rafraîchit les dispos
+        fetchDisponibilites(serviceSelectionne.id);
       } else {
         setMsgReservation("❌ " + (data.message || "Erreur lors de la réservation."));
       }
@@ -98,7 +94,6 @@ export default function Services({ user }) {
     }
   }
 
-  // filtrage + tri côté frontend
   const servicesFiltres = services
     .filter(s => {
       const matchSearch = s.titre.toLowerCase().includes(search.toLowerCase())
@@ -118,14 +113,22 @@ export default function Services({ user }) {
   return (
     <div className="page-container">
 
-      {/* --- vue détail d'un service --- */}
+      {/* --- vue détail --- */}
       {serviceSelectionne ? (
         <div className="detail-view">
           <button className="btn-back" onClick={handleFermerDetail}>← Retour aux services</button>
 
           <div className="detail-header">
-            <div>
-              <span className="badge">{serviceSelectionne.categorie}</span>
+            <div className="detail-image-wrapper">
+              <img
+                src={getImageCategorie(serviceSelectionne.categorie)}
+                alt={serviceSelectionne.titre}
+                className="detail-image"
+                onError={e => { e.target.style.display = "none"; }}
+              />
+              <span className="badge detail-badge">{serviceSelectionne.categorie}</span>
+            </div>
+            <div className="detail-body">
               <h2>{serviceSelectionne.titre}</h2>
               <p>{serviceSelectionne.description}</p>
               <div className="detail-meta">
@@ -138,7 +141,7 @@ export default function Services({ user }) {
             </div>
           </div>
 
-          <h3>Créneaux disponibles</h3>
+          <h3 style={{ margin: "1.5rem 0 1rem" }}>Créneaux disponibles</h3>
           {msgReservation && <p className="info-msg">{msgReservation}</p>}
 
           {loadingDispo ? (
@@ -148,7 +151,7 @@ export default function Services({ user }) {
           ) : (
             <div className="disponibilites-list">
               {disponibilites.map(dispo => (
-                <div key={dispo.id} className={`dispo-card ${dispo.statut}`}>
+                <div key={dispo.id} className="dispo-card">
                   <div className="dispo-info">
                     <span>📅 {new Date(dispo.date_heure_debut).toLocaleDateString("fr-FR", {
                       weekday: "long", day: "numeric", month: "long"
@@ -161,11 +164,7 @@ export default function Services({ user }) {
                     </span>
                   </div>
                   {dispo.statut === "disponible" && (
-                    <button
-                      className="btn-primary"
-                      onClick={() => handleReserver(dispo.id)}
-                      disabled={!user}
-                    >
+                    <button className="btn-primary" onClick={() => handleReserver(dispo.id)} disabled={!user}>
                       {user ? "Réserver" : "Connectez-vous pour réserver"}
                     </button>
                   )}
@@ -180,7 +179,6 @@ export default function Services({ user }) {
         <>
           <h1>Nos services</h1>
 
-          {/* filtres */}
           <div className="filters-bar">
             <input
               type="text"
@@ -209,22 +207,38 @@ export default function Services({ user }) {
               <p>Aucun service ne correspond à votre recherche.</p>
             ) : (
               servicesFiltres.map(service => (
-                <div key={service.id} className="card">
-                  <span className="badge">{service.categorie}</span>
-                  <h3>{service.titre}</h3>
-                  <p className="card-desc">{service.description}</p>
-                  <div className="card-meta">
-                    <span>⏱ {service.duree_minutes} min</span>
-                    <span>💶 {service.prix} €</span>
+                <div key={service.id} className="card card-visuelle">
+                  {/* image + badge catégorie */}
+                  <div className="card-image-wrapper">
+                    <img
+                      src={getImageCategorie(service.categorie)}
+                      alt={service.titre}
+                      className="card-image"
+                      onError={e => {
+                        e.target.parentElement.style.background = "var(--vert-clair)";
+                        e.target.style.display = "none";
+                      }}
+                    />
+                    <span className="badge card-badge">{service.categorie}</span>
                   </div>
-                  {service.intervenant_prenom && (
-                    <p className="card-intervenant">
-                      👤 {service.intervenant_prenom} {service.intervenant_nom}
-                    </p>
-                  )}
-                  <button className="btn-primary" onClick={() => handleVoirDetail(service)}>
-                    Voir les disponibilités
-                  </button>
+
+                  {/* contenu */}
+                  <div className="card-content">
+                    <h3>{service.titre}</h3>
+                    <p className="card-desc">{service.description}</p>
+                    <div className="card-meta">
+                      <span>⏱ {service.duree_minutes} min</span>
+                      <span>💶 {service.prix} €</span>
+                    </div>
+                    {service.intervenant_prenom && (
+                      <p className="card-intervenant">
+                        👤 {service.intervenant_prenom} {service.intervenant_nom}
+                      </p>
+                    )}
+                    <button className="btn-primary card-btn" onClick={() => handleVoirDetail(service)}>
+                      Voir les disponibilités
+                    </button>
+                  </div>
                 </div>
               ))
             )}
