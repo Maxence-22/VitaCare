@@ -1,0 +1,105 @@
+/* ============================================================
+   AJOUTS - filtres passé/futur et section-header
+   À AJOUTER À LA FIN DE index.css
+   ============================================================ */
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filtre-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filtre-tab {
+  padding: 0.4rem 0.9rem;
+  background: var(--gris);
+  border: 1px solid var(--gris-moyen);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.filtre-tab.active {
+  background: var(--vert);
+  color: var(--blanc);
+  border-color: var(--vert);
+}
+
+.badge-passe {
+  display: inline-block;
+  background: #f0f0f0;
+  color: #999;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* participants modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal {
+  background: var(--blanc);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  line-height: 1;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.participant-card {
+  background: var(--gris);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.participant-info p {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.2rem;
+}
