@@ -1,5 +1,7 @@
 # VitaCare
 Projet Web dynamique 2026 - ECE
+https://github.com/Maxence-22/VitaCare.git
+
 
 1. Importer vitacareBDD dans phpMyAdmin
 2. Copier vitacare-api/ dans www/
