@@ -2,14 +2,12 @@
 // Connexion à la base de données MySQL
 // À adapter si ton MAMP utilise un port différent
 
-
-
-
 define('DB_HOST', 'localhost');
-define('DB_PORT', '3306');     // port WAMP par défaut
-define('DB_NAME', 'vitacare'); // ou vitacare2 si tu as pas renommé
+define('DB_PORT', '8889');        // port MySQL par défaut sur MAMP
+define('DB_NAME', 'vitacare');
 define('DB_USER', 'root');
-define('DB_PASS', '');         // mot de passe vide sur WAMP
+define('DB_PASS', 'root');        // mot de passe par défaut MAMP
+
 function getDB() {
     static $pdo = null;
 
